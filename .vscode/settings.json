@@ -1,3 +1,6 @@
 {
-    "cSpell.language": "en,ru,uk,de"
+    "cSpell.language": "ru,uk,de",
+    "cSpell.enableFiletypes": [
+        "!javascript"
+    ]
 }

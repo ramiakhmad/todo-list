@@ -30,10 +30,11 @@ ul {
     max-width: 428px;
     background: white;
     border-radius: 8px;
-    padding: 24px 16px 16px 16px;
+    padding: 24px 16px 80px 16px;
     margin: 5% auto;
     position: relative;
-    height: 100vh;
+
+    
 }
 
 .main-header {
@@ -276,4 +277,9 @@ ul {
     color: var(--second-effect-color);
     background-color: var(--main-bg-color);
     border: 1px solid var(--second-effect-color);
+}
+
+.todo-block span {
+    margin-left: auto;
+    cursor: pointer;
 }
