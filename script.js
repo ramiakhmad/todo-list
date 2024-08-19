@@ -1,100 +1,120 @@
-const createForm = document.querySelector("#create-form");
-const getTodos = () => {
-  return JSON.parse(localStorage.getItem("todosStorage"));
-};
-const createTodo = (e) => {
-  e.preventDefault();
-  const startDate = document.querySelector("#startDate").value;
-  const description = document.querySelector("#description").value;
-  const localStorageTodos = getTodos();
-  const newTodo = {
-    // создаем случайный id, чтобы иметь возможность без проблем найти необходимую запись
-    id: "todo_" + Math.random().toString(16).slice(2),
-    // Текущая дата
-    createAt: new Date(),
-    startDate,
-    description,
-    done: false,
-  };
-  if (localStorageTodos && Array.isArray(localStorageTodos)) {
-    //если условие истинно, добавляем новыу запись в массив и записываем в localStorage
-    localStorageTodos.push(newTodo);
-    localStorage.setItem("todosStorage", JSON.stringify(localStorageTodos));
-  } else {
-    //если условие ложно, записываем массив с одним элементов в localStorage
-    localStorage.setItem("todosStorage", JSON.stringify([newTodo]));
-  }
+let filter = localStorage.getItem('filter') || 'filter-all';
+setActiveFilter(filter);
 
-  renderTodos();
-};
+let searchString = localStorage.getItem('searchString') || '';
+document.querySelector('.search-field__input').value = searchString;
 
-const renderTodos = () => {
-  const localStorageTodos = JSON.parse(localStorage.getItem("todosStorage"));
-  if (localStorageTodos && Array.isArray(localStorageTodos)) {
-    // Достаем контейнер
-    const container = document.querySelector(".todo-list");
-    // Обнуляем содержимое контейнера
-    container.innerHTML = "";
-    // Проходим по массиву элементов и по одному добавляем в контейнер
-    localStorageTodos.forEach((todos) => {
-      const startDate = new Date(todos.startDate).toLocaleString("ru-RU", {
-        day: "numeric",
-        month: "long",
-        hour: "numeric",
-        minute: "numeric",
-      });
+let todos = JSON.parse(localStorage.getItem('todos')) || [];
+setCurrrenDate();
 
-      const id = todos.id;
-      container.insertAdjacentHTML(
-        "beforeend",
-        `
-                    <li class='todo-block'>
-                        <label class="checkbox" for="${id}" onclick="toggleTodoDone('${id}')">
-              <input type="checkbox" name="${id}" id="${id}" ${
-          todos.done ? "checked" : ""
-        }/>
-              <span class="material-symbols-rounded checkbox__check-icon">
-                check
-              </span>
-            </label>
-            <div class="todo-block__data">
-              <p class="todo-block__date">${startDate}</p>
-              <h3 class="todo-block__title">${todos.description}</h3>
-            </div>
-<span class="material-symbols-rounded" onclick="deleteTodo('${id}')">
-              close
-            </span>
+showTodos();
 
-                    </li>
-                `
-      );
+function showTodos() {
+    const todoList = document.querySelector('.todo-list');
+    todoList.innerHTML = "";
+    todos = todos.sort((a, b) => a.startDateNum - b.startDateNum);
+    todos.forEach(val => {
+        if ((filter == 'filter-active' && val.checked == '') ||
+            (filter == 'filter-done' && val.checked == 'checked') ||
+            (filter == 'filter-all'))
+            if (!searchString || val.descriptionValue.includes(searchString)) {
+                showTodo(val.id, val.startDateValue, val.descriptionValue, val.checked)
+            }
     });
-  }
-};
+}
 
-const toggleTodoDone = (todoId) => {
-  const localStorageTodos = getTodos();
-  if (localStorageTodos && Array.isArray(localStorageTodos)) {
-    const todoIndex = localStorageTodos.findIndex((todo) => todo.id === todoId);
-    localStorageTodos[todoIndex].done = !localStorageTodos[todoIndex].done;
-    localStorage.setItem("todosStorage", JSON.stringify(localStorageTodos));
-  }
-  renderTodos();
-};
+function showTodo(id, startDateValue, descriptionValue, checked) {
+    const todoList = document.querySelector('.todo-list');
+    const newTodo = `      
+    <li class="todo-block">
+        <label for= "checkbox" class= "checkbox" >
+          <input type="checkbox" name="checkbox" id="${id}" ${checked} onclick=checkboxOnclickHandler(this)>
+          <span class="material-symbols-rounded checkbox__check-icon">
+            check
+          </span>
+        </label>
+        <div class="todo-block__data">
+          <p class="todo-block__date">${startDateValue}</p>
+          <h3 class="todo-block__title">${descriptionValue}</h3>
+        </div>
+    </li > `;
 
-const deleteTodo = (todoId) => {
-  const localStorageTodos = getTodos();
-  if (localStorageTodos && Array.isArray(localStorageTodos)) {
-    const newTodos = localStorageTodos.filter((todo) => {
-        return todo.id !== todoId
+    todoList.insertAdjacentHTML('beforeend', newTodo);
+}
+
+function checkboxOnclickHandler(thisCheckbox) {
+    todos.forEach(val => {
+        if (val.id == thisCheckbox.id) {
+            val.checked = val.checked ? '' : 'checked';
+        }
     });
-    localStorage.setItem("todosStorage", JSON.stringify(newTodos));
-  }
-  renderTodos();
-};
+    localStorage.setItem('todos', JSON.stringify(todos));
 
-createForm.addEventListener("submit", (e) => {
-  createTodo(e);
-});
-renderTodos();
-// console.log(todosIds);
+}
+
+function setCurrrenDate() {
+    const nameDayText = document.querySelector(".main-header");
+    const today = new Date();
+    let currentDay = today.toLocaleDateString('ru', { weekday: 'long' });
+    currentDay = currentDay.charAt(0).toUpperCase() + currentDay.slice(1).toLocaleLowerCase();
+    nameDayText.textContent = currentDay;
+
+    const dateMonthText = document.querySelector(".header__group-subheader");
+    let dateMonth = today.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
+    dateMonthText.textContent = dateMonth;
+}
+
+function splitButtonClickHandler(thisButton) {
+    setActiveFilter(thisButton.id);
+    filter = thisButton.id;
+    localStorage.setItem('filter', filter);
+    showTodos();
+}
+
+function setActiveFilter(curFilter) {
+    const buttons = document.querySelectorAll('.split-button__button');
+    buttons.forEach(val => {
+        val.classList.remove('split-button__button--active');
+    })
+    const btn = document.querySelector(`#${curFilter}`);
+    btn.classList.add('split-button__button--active');
+
+}
+
+document.querySelector('#submitBtnClick').addEventListener('click', event => {
+    event.preventDefault();
+    const description = document.querySelector('#description');
+    const descriptionValue = description.value;
+    const startDate = document.querySelector('#startDate');
+    let startDateValue = startDate.value;
+    if (startDateValue)
+        startDateValue = new Date(startDate.value);
+    else
+        startDateValue = new Date();
+    if (!descriptionValue)
+        return;
+
+    const startDateNum = startDateValue.getTime();
+    startDateValue = startDateValue.toLocaleDateString('ru', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const id = crypto.randomUUID();
+    const checked = '';
+    todos.push({ 'id': id, 'startDateNum': startDateNum, 'startDateValue': startDateValue, 'descriptionValue': descriptionValue, 'checked': checked });
+    localStorage.setItem('todos', JSON.stringify(todos));
+
+    startDate.value = '';
+    description.value = '';
+    showTodos();
+})
+
+document.querySelector('.search-field__input').addEventListener('input', event => {
+    searchString = event.target.value;
+    localStorage.setItem('searchString', searchString);
+    showTodos();
+})
+
